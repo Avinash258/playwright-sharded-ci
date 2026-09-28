@@ -1,0 +1,118 @@
+name: Reusable Playwright sharded
+
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        description: Node.js version
+        type: string
+        default: "20"
+      shard-total:
+        description: Number of parallel shards (1–8)
+        type: number
+        default: 4
+      browsers:
+        description: Browsers for playwright install --with-deps
+        type: string
+        default: chromium
+      test-args:
+        description: Extra playwright test arguments
+        type: string
+        default: ""
+      working-directory:
+        description: Directory containing package.json / playwright config
+        type: string
+        default: "."
+
+jobs:
+  shard:
+    timeout-minutes: 90
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shardIndex: [1, 2, 3, 4, 5, 6, 7, 8]
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - name: Skip unused shards
+        if: matrix.shardIndex > inputs.shard-total
+        run: echo "Skipping shard ${{ matrix.shardIndex }} (total=${{ inputs.shard-total }})"
+
+      - uses: actions/checkout@v4
+        if: matrix.shardIndex <= inputs.shard-total
+
+      - uses: actions/setup-node@v4
+        if: matrix.shardIndex <= inputs.shard-total
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: npm
+          cache-dependency-path: ${{ inputs.working-directory }}/package-lock.json
+
+      - name: Install dependencies
+        if: matrix.shardIndex <= inputs.shard-total
+        run: |
+          if [ -f package-lock.json ]; then npm ci; else npm install; fi
+
+      - name: Install Playwright browsers
+        if: matrix.shardIndex <= inputs.shard-total
+        run: npx playwright install --with-deps ${{ inputs.browsers }}
+
+      - name: Run shard ${{ matrix.shardIndex }}/${{ inputs.shard-total }}
+        if: matrix.shardIndex <= inputs.shard-total
+        run: npx playwright test --shard=${{ matrix.shardIndex }}/${{ inputs.shard-total }} ${{ inputs.test-args }}
+        env:
+          CI: true
+
+      - name: Upload blob report
+        if: matrix.shardIndex <= inputs.shard-total && !cancelled()
+        uses: actions/upload-artifact@v4
+        with:
+          name: blob-report-shard-${{ matrix.shardIndex }}
+          path: ${{ inputs.working-directory }}/blob-report
+          retention-days: 7
+          if-no-files-found: ignore
+
+  merge-reports:
+    needs: shard
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: npm
+          cache-dependency-path: ${{ inputs.working-directory }}/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          if [ -f package-lock.json ]; then npm ci; else npm install; fi
+
+      - name: Download blob reports
+        uses: actions/download-artifact@v4
+        with:
+          pattern: blob-report-shard-*
+          path: ${{ inputs.working-directory }}/all-blob-reports
+          merge-multiple: true
+
+      - name: Merge Playwright reports
+        run: |
+          if [ -d all-blob-reports ] && [ "$(ls -A all-blob-reports 2>/dev/null)" ]; then
+            npx playwright merge-reports --reporter html ./all-blob-reports
+          else
+            echo "No blob reports found to merge — ensure playwright.config uses the blob reporter on CI."
+          fi
+
+      - name: Upload merged HTML report
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-merged
+          path: ${{ inputs.working-directory }}/playwright-report
+          retention-days: 14
+          if-no-files-found: ignore
