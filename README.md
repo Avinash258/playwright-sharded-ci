@@ -4,7 +4,7 @@ Reusable **GitHub Actions** workflow: run Playwright in **N parallel shards**, t
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-> Built from patterns used in [PlaywrightTSFrameWork](https://github.com/Avinash258/PlaywrightTSFrameWork) Â· [Portfolio](https://avinash258.github.io/portfolio/)
+> Built from patterns used in [PlaywrightTSFrameWork](https://github.com/Avinash258/PlaywrightTSFrameWork) · [Portfolio](https://avinash258.github.io/portfolio/)
 
 ## Why
 
@@ -44,8 +44,8 @@ jobs:
 ## What the reusable workflow does
 
 1. Matrix job: `npx playwright test --shard=i/N` with `CI=true`
-2. Uploads each shardâ€™s `blob-report`
-3. Merge job: `npx playwright merge-reports` â†’ single HTML report artefact
+2. Uploads each shard’s `blob-report`
+3. Merge job: `npx playwright merge-reports` → single HTML report artefact
 
 ## Local equivalent
 
@@ -74,9 +74,9 @@ reporter: process.env.CI
 
 ## License
 
-MIT â€” see [LICENSE](LICENSE).
+MIT — see [LICENSE](LICENSE).
 
 ## Author
 
-**Avinash Sharma** â€” QA Automation Architect / Lead SDET  
-[GitHub](https://github.com/Avinash258) Â· [Portfolio](https://avinash258.github.io/portfolio/)
+**Avinash Sharma** — QA Automation Architect / Lead SDET  
+[GitHub](https://github.com/Avinash258) · [Portfolio](https://avinash258.github.io/portfolio/)
