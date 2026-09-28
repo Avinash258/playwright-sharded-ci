@@ -67,7 +67,7 @@ jobs:
 
       - name: Upload blob report
         if: matrix.shardIndex <= inputs.shard-total && !cancelled()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: blob-report-shard-${{ matrix.shardIndex }}
           path: ${{ inputs.working-directory }}/blob-report
@@ -110,7 +110,7 @@ jobs:
           fi
 
       - name: Upload merged HTML report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report-merged
           path: ${{ inputs.working-directory }}/playwright-report
